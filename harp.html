@@ -180,10 +180,11 @@ select{appearance:none;-webkit-appearance:none;background:#0b0f15;color:var(--in
       this.gain = 1 / 0.25;                            // 0.25 Pa -> full scale
       this.stickCount = 0; this.stepCount = 0; this.pAcc = 0; this.pN = 0;
       this.seed = 12345;
+      this.glideA = 1 - Math.exp(-this.dt / 0.012);
     }
     alloc(n) {
       const F = () => new Float64Array(n);
-      this.q = F(); this.v = F(); this.w2 = F(); this.dc = F(); this.om = F();
+      this.q = F(); this.v = F(); this.w2 = F(); this.w2T = F(); this.dc = F(); this.om = F();
       this.nn = new Int32Array(n); this.isB = new Uint8Array(n);
       this.aT = F(); this.aR = F(); this.aA = F(); this.gL = F(); this.gR = F(); this.G = F();
       this.pT = F(); this.pR = F(); this.pA = F(); this.vs = F();
@@ -196,7 +197,7 @@ select{appearance:none;-webkit-appearance:none;background:#0b0f15;color:var(--in
       if (opt.alpha != null) this.alpha = opt.alpha;
       if (opt.Rrim) this.Rrim = opt.Rrim;
       const oldIdx = new Map(); this.keys.forEach((k, i) => oldIdx.set(k, i));
-      const oq = this.q, ov = this.v;
+      const oq = this.q, ov = this.v, ow2 = this.w2;
       const lim = 1.7 / this.dt, need = list.length * 2;
       if (need > this.cap) { this.cap = need; }
       const q = new Float64Array(this.cap), v = new Float64Array(this.cap);
@@ -206,10 +207,11 @@ select{appearance:none;-webkit-appearance:none;background:#0b0f15;color:var(--in
         if (m.omega > lim) continue;
         for (let b = 0; b < 2; b++) {
           const key = m.key + (b ? 'B' : 'A'), j = oldIdx.get(key);
-          if (j != null) { q[k] = oq[j]; v[k] = ov[j]; }
           const om = m.omega * (1 + (b ? 0.5 : -0.5) * this.split);
           this.om[k] = om;
-          this.w2[k] = Math.pow(2 / this.dt * Math.sin(om * this.dt / 2), 2);  // pre-warped for symplectic Euler
+          this.w2T[k] = Math.pow(2 / this.dt * Math.sin(om * this.dt / 2), 2);  // pre-warped for symplectic Euler
+          // keep the vibration and glide the stiffness when a mode is retuned (pouring while it sings)
+          if (j != null) { q[k] = oq[j]; v[k] = ov[j]; this.w2[k] = ow2[j]; } else this.w2[k] = this.w2T[k];
           this.dc[k] = 2 * m.zeta * om;
           this.nn[k] = m.n; this.isB[k] = b;
           this.aT[k] = m.rimV; this.aR[k] = m.rimR; this.aA[k] = m.rimA; this.G[k] = m.G;
@@ -308,6 +310,7 @@ select{appearance:none;-webkit-appearance:none;background:#0b0f15;color:var(--in
           for (let k = 0; k < N; k++) {
             let Q = pR[k] * Fr + pA[k] * Fa;
             if (tapping) { const n = nn[k]; Q += Ft * aR[k] * (isB[k] ? ts[n] : tc[n]); }
+            w2[k] += (this.w2T[k] - w2[k]) * this.glideA;
             const vk = (v[k] + dt * (-w2[k] * q[k] + Q)) / (1 + dc[k] * dt);
             vs[k] = vk; vg += pT[k] * vk;
           }
