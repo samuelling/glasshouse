@@ -523,7 +523,7 @@ registerProcessor('glass-proc', GlassProc);`;
     for (let m = m0; m <= m1; m++) {
       const x = xOfHz(440 * Math.pow(2, (m - 69) / 12)), pc = ((m % 12) + 12) % 12, nat = [0, 2, 4, 5, 7, 9, 11].includes(pc);
       c.strokeStyle = `rgba(${col},${nat ? 0.38 : 0.16})`; c.beginPath(); c.moveTo(x, y - (nat ? 7 : 4)); c.lineTo(x, y + (nat ? 7 : 4)); c.stroke();
-      if (nat && (pxPerSemi > 11 || pc === 0)) { c.fillStyle = `rgba(${col},${pc === 0 ? 0.75 : 0.42})`; c.fillText(nameOf(m), x, y + 21); }
+      if ((nat && (pxPerSemi > 11 || pc === 0)) || pxPerSemi > 34) { c.fillStyle = `rgba(${col},${pc === 0 ? 0.75 : nat ? 0.42 : 0.3})`; c.fillText(nameOf(m), x, y + 21); }
     }
     // the bead = where the water has put the (2,0) mode now
     if (wet && isFinite(wet.f2)) {
