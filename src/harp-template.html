@@ -5,22 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>GlassHouse · Harp</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=IBM+Plex+Mono:wght@400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>/*CSS*/</style>
 </head>
 <body>
 <div class="app">
   <header>
-    <div class="brand"><h1>Glass<span>House</span></h1><span class="mode">harp</span></div>
-    <nav>
-      <a href="index.html" class="solo">Glass</a><a href="bowl.html" class="solo">Bowl</a>
-      <button id="settingsBtn" class="ghost">Settings</button>
-    </nav>
+    <div class="mark">Glass<i>House</i></div>
+    <nav class="tabs"><a href="index.html">Glass</a><a href="bowl.html">Bowl</a><a href="harp.html" class="on">Harp</a></nav>
+    <button id="settingsBtn" class="ghost">settings</button>
   </header>
 
   <div class="stagewrap">
     <canvas id="stage" aria-label="Glass harp. Rub rims with one finger per glass; tap inside a glass to flick it; tap a label to retune."></canvas>
-    <div id="hint" class="hint"><div class="hint-in"><b>Tap to wake the glasses</b><span>Rub several rims at once, one finger per glass. Tap a glass's note label to retune it. Keys below set the water.</span><small>On iPhone/iPad, turn off silent mode to hear Web Audio.</small></div></div>
+    <div id="hint" class="hint"><div class="hint-in"><b>Touch to wake the glasses</b><span>One finger per rim. Tap a note name to retune; the keys pour water.</span><small>On iPhone or iPad, turn off silent mode to hear Web Audio.</small></div></div>
     <div id="busy" class="busy"><div class="spin"></div><span id="busyMsg">Tuning…</span></div>
   </div>
 

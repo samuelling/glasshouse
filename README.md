@@ -12,7 +12,7 @@ Nothing is sampled, and no oscillator is told what pitch to play.
 - **Finger:** a fingertip pad with measured shear impedance, coupled to the rim through velocity-weakening friction. Stick–slip is solved implicitly every 10 µs against the glass's exact one-step mobility. Skin damping of radial and axial rim motion locks the standing wave's node under your finger, so the pattern follows you around the rim.
 - **Sound:** each mode's radiated power with its cos *nθ* directivity, picked up at two virtual mics.
 
-**Water strip:** the strip at the right edge works like a theremin for water. Height is pitch, and the page pours exactly enough water to reach it, using the wet model pre-solved at 45 fill levels and interpolated mode by mode. Modes glide continuously, so you can bend a note while it sings. **Glide** or **semitones** sets how the strip moves, and the corner inset shows the glass from the side.
+**Water strip:** the strip along the bottom of the glass works like a theremin for water, placed so the thumb of the hand holding a phone can play it. Height is pitch, and the page pours exactly enough water to reach it, using the wet model pre-solved at 45 fill levels and interpolated mode by mode. Modes glide continuously, so you can bend a note while it sings. **Glide** or **semitones** sets how the strip moves, and the corner inset shows the glass from the side.
 
 ## Bowl (`bowl.html`)
 

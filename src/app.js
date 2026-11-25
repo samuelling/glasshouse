@@ -259,25 +259,27 @@ registerProcessor('glass-proc', GlassProc);`;
 
   const FOOT_R = 0.039;
   function layout() {
-    const sw = clamp(W * 0.12, 46, 78), pad = 14;
-    strip = { x: W - sw - pad * 0.5, w: sw, y: pad * 2.2, h: H - pad * 4.4 };
-    const gw = W - sw - pad;
-    cx = gw / 2 + pad * 0.3 + (S.inset ? W * 0.035 : 0); cy = H / 2 - (S.inset ? H * 0.03 : 0);
+    // the water strip runs along the bottom, where the thumb of the hand holding the phone rests
+    const sh = clamp(H * 0.14, 62, 96), padX = clamp(W * 0.105, 40, 64);
+    strip = { x: padX, w: W - 2 * padX, y: H - sh * 0.62, h: sh, top: H - sh };
+    const gh = H - sh;
+    cx = W / 2 + (S.inset ? W * 0.06 : 0); cy = gh / 2 + 6;
     const rMax = BOWL ? Math.max(glass.geo.rMaxOuter, glass.geo.rimR) * 1.18 : Math.max(glass.geo.rMaxOuter, FOOT_R * S.scale, glass.geo.rimR * 1.15);
-    pxPerM = (S.inset ? 0.41 : 0.45) * Math.min(gw, H) / rMax;
+    pxPerM = (S.inset ? 0.42 : 0.46) * Math.min(W, gh) / rMax;
   }
-  const yOfHz = hz => { const r = pitchRange(); return strip.y + (1 - Math.log(hz / r.lo) / Math.log(r.hi / r.lo)) * strip.h; };
-  const hzOfY = y => { const r = pitchRange(); return r.lo * Math.pow(r.hi / r.lo, 1 - clamp((y - strip.y) / strip.h, 0, 1)); };
+  // low (full) on the left, high (empty) on the right, like a keyboard
+  const xOfHz = hz => { const r = pitchRange(); return strip.x + Math.log(hz / r.lo) / Math.log(r.hi / r.lo) * strip.w; };
+  const hzOfX = x => { const r = pitchRange(); return r.lo * Math.pow(r.hi / r.lo, clamp((x - strip.x) / strip.w, 0, 1)); };
 
   // ------------------------------------------------------------ pointers: rim (rub / tap) and the water strip
   const P = { id: null, down: false, theta: 0, omega: 0, lastT: 0, lastTh: 0 };
-  const STRIP = { id: null, y: 0, target: null };
+  const STRIP = { id: null, x: 0, target: null };
   const capture = (el, id) => { try { el.setPointerCapture(id); } catch (_) {} };
   function local(e) { const r = top.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   function polar(e) { const l = local(e), x = l.x - cx, y = l.y - cy; return { r: Math.hypot(x, y) / pxPerM, th: Math.atan2(y, x) }; }
-  function stripTo(y) {
+  function stripTo(x) {
     if (!table) return;
-    let hz = hzOfY(y);
+    let hz = hzOfX(x);
     if (S.snap === 'semi') { const r = pitchRange(); hz = clamp(440 * Math.pow(2, (Math.round(midiOf(hz)) - 69) / 12), r.lo, r.hi); }
     STRIP.target = hz; setFill(fillForPitch(hz));
   }
@@ -287,9 +289,9 @@ registerProcessor('glass-proc', GlassProc);`;
     if (!started) { started = true; $('hint').classList.add('gone'); }
     if (!glass) return;
     const l = local(e);
-    if (strip && l.x >= strip.x - 14) {                     // the water strip
+    if (strip && l.y >= strip.top) {                         // the water strip
       if (STRIP.id !== null) return;
-      STRIP.id = e.pointerId; capture(top, e.pointerId); STRIP.y = l.y; stripTo(l.y); return;
+      STRIP.id = e.pointerId; capture(top, e.pointerId); STRIP.x = l.x; stripTo(l.x); return;
     }
     if (P.id !== null) return;
     const p = polar(e), R = glass.geo.rimR, tol = Math.max(0.2 * R, 22 / pxPerM);
@@ -304,7 +306,7 @@ registerProcessor('glass-proc', GlassProc);`;
     }
   }, { passive: false });
   top.addEventListener('pointermove', e => {
-    if (e.pointerId === STRIP.id) { const l = local(e); STRIP.y = l.y; stripTo(l.y); return; }
+    if (e.pointerId === STRIP.id) { const l = local(e); STRIP.x = l.x; stripTo(l.x); return; }
     if (e.pointerId !== P.id || !P.down) return;
     let evs = e.getCoalescedEvents ? e.getCoalescedEvents() : null; if (!evs || !evs.length) evs = [e];
     for (const ev of evs) {
@@ -324,8 +326,8 @@ registerProcessor('glass-proc', GlassProc);`;
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
     if (e.key === ' ' && audio) { send({ t: 'tap', theta: Math.PI / 2, force: BOWL ? 45 : 6, dur: BOWL ? 2.5e-3 : 4e-4 }); e.preventDefault(); }
-    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && table) {   // step the water a semitone
-      const cur = midiOf(wet.f2), r = pitchRange(), m = Math.round(cur) + (e.key === 'ArrowUp' ? 1 : -1);
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && table) {   // step the water a semitone
+      const cur = midiOf(wet.f2), r = pitchRange(), m = Math.round(cur) + (e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 1 : -1);
       setFill(fillForPitch(clamp(440 * Math.pow(2, (m - 69) / 12), r.lo, r.hi))); e.preventDefault();
     }
   });
@@ -501,36 +503,41 @@ registerProcessor('glass-proc', GlassProc);`;
 
   // the water strip: pour by pitch, like a theremin
   function drawStrip(c, t) {
-    const s = strip, r = pitchRange(), x = s.x + s.w / 2;
+    const s = strip, r = pitchRange(), y = s.y;
     const col = BOWL ? '255,215,160' : '180,215,255';
-    const lg = c.createLinearGradient(0, s.y, 0, s.y + s.h);
-    lg.addColorStop(0, `rgba(${col},0)`); lg.addColorStop(0.12, `rgba(${col},.32)`); lg.addColorStop(0.88, `rgba(${col},.32)`); lg.addColorStop(1, `rgba(${col},0)`);
-    c.strokeStyle = lg; c.lineWidth = 1; c.beginPath(); c.moveTo(x, s.y); c.lineTo(x, s.y + s.h); c.stroke();
+    // a faint shelf of light marks the thumb zone
+    const zg = c.createLinearGradient(0, s.top, 0, H);
+    zg.addColorStop(0, `rgba(${col},0)`); zg.addColorStop(1, `rgba(${col},${STRIP.id !== null ? 0.08 : 0.04})`);
+    c.fillStyle = zg; c.fillRect(0, s.top, W, H - s.top);
+    const lg = c.createLinearGradient(s.x - 20, 0, s.x + s.w + 20, 0);
+    lg.addColorStop(0, `rgba(${col},0)`); lg.addColorStop(0.08, `rgba(${col},.34)`); lg.addColorStop(0.92, `rgba(${col},.34)`); lg.addColorStop(1, `rgba(${col},0)`);
+    c.strokeStyle = lg; c.lineWidth = 1; c.beginPath(); c.moveTo(s.x - 20, y); c.lineTo(s.x + s.w + 20, y); c.stroke();
     if (!r) {
-      c.fillStyle = `rgba(${col},.4)`; c.font = 'italic 12px "Cormorant Garamond", serif'; c.textAlign = 'center';
-      c.save(); c.translate(x - 10, s.y + s.h / 2); c.rotate(-Math.PI / 2); c.fillText('tuning the water…', 0, 0); c.restore(); return;
+      c.fillStyle = `rgba(${col},.4)`; c.font = 'italic 13px "Cormorant Garamond", serif'; c.textAlign = 'center';
+      c.fillText('tuning the water…', W / 2, y - 10); return;
     }
-    // semitone ticks, naturals named
+    // semitone ticks, naturals named beneath
     const m0 = Math.ceil(midiOf(r.lo)), m1 = Math.floor(midiOf(r.hi));
-    const step = (m1 - m0) > 30 ? 2 : 1;
-    c.textAlign = 'right'; c.font = 'italic 12px "Cormorant Garamond", serif';
+    const pxPerSemi = s.w / Math.max(1, midiOf(r.hi) - midiOf(r.lo));
+    c.textAlign = 'center'; c.font = 'italic 12px "Cormorant Garamond", serif';
     for (let m = m0; m <= m1; m++) {
-      const y = yOfHz(440 * Math.pow(2, (m - 69) / 12)), pc = ((m % 12) + 12) % 12, nat = [0, 2, 4, 5, 7, 9, 11].includes(pc);
-      c.strokeStyle = `rgba(${col},${nat ? 0.38 : 0.16})`; c.beginPath(); c.moveTo(x - (nat ? 7 : 4), y); c.lineTo(x + (nat ? 7 : 4), y); c.stroke();
-      if (nat && (m - m0) % step === 0) { c.fillStyle = `rgba(${col},${pc === 0 ? 0.75 : 0.42})`; c.fillText(nameOf(m), x - 11, y + 4); }
+      const x = xOfHz(440 * Math.pow(2, (m - 69) / 12)), pc = ((m % 12) + 12) % 12, nat = [0, 2, 4, 5, 7, 9, 11].includes(pc);
+      c.strokeStyle = `rgba(${col},${nat ? 0.38 : 0.16})`; c.beginPath(); c.moveTo(x, y - (nat ? 7 : 4)); c.lineTo(x, y + (nat ? 7 : 4)); c.stroke();
+      if (nat && (pxPerSemi > 11 || pc === 0)) { c.fillStyle = `rgba(${col},${pc === 0 ? 0.75 : 0.42})`; c.fillText(nameOf(m), x, y + 21); }
     }
     // the bead = where the water has put the (2,0) mode now
     if (wet && isFinite(wet.f2)) {
-      const y = yOfHz(clamp(wet.f2, r.lo, r.hi)), on = STRIP.id !== null, pulse = 0.5 + 0.5 * Math.sin(t * 1.6);
-      const bg = c.createRadialGradient(x, y, 0, x, y, on ? 26 : 18);
+      const x = xOfHz(clamp(wet.f2, r.lo, r.hi)), on = STRIP.id !== null, pulse = 0.5 + 0.5 * Math.sin(t * 1.6);
+      const bg = c.createRadialGradient(x, y, 0, x, y, on ? 30 : 20);
       bg.addColorStop(0, `rgba(${col},${on ? 0.55 : 0.35 + 0.1 * pulse})`); bg.addColorStop(1, `rgba(${col},0)`);
-      c.fillStyle = bg; c.beginPath(); c.arc(x, y, on ? 26 : 18, 0, TAU); c.fill();
+      c.fillStyle = bg; c.beginPath(); c.arc(x, y, on ? 30 : 20, 0, TAU); c.fill();
       c.fillStyle = 'rgba(245,250,255,.95)'; c.beginPath(); c.arc(x, y, 3, 0, TAU); c.fill();
-      c.textAlign = 'left'; c.font = '10px "IBM Plex Mono", monospace'; c.fillStyle = `rgba(${col},.6)`;
-      c.fillText(`${Math.round(S.fill * 100)}%`, x + 9, y - 8);
+      c.textAlign = 'center'; c.font = '10px "IBM Plex Mono", monospace'; c.fillStyle = `rgba(${col},.6)`;
+      c.fillText(`${Math.round(S.fill * 100)}%`, x, y - 12);
     }
-    c.textAlign = 'center'; c.font = 'italic 11px "Cormorant Garamond", serif'; c.fillStyle = `rgba(${col},.45)`;
-    c.fillText('empty', x, s.y - 8); c.fillText('full', x, s.y + s.h + 16);
+    c.font = 'italic 12px "Cormorant Garamond", serif'; c.fillStyle = `rgba(${col},.45)`;
+    c.textAlign = 'right'; c.fillText('full', s.x - 8, y + 4);
+    c.textAlign = 'left'; c.fillText('empty', s.x + s.w + 8, y + 4);
   }
 
   // hand-hammered bronze, seen from above

@@ -20,9 +20,9 @@ def write(out, t):
 
 GLASS = dict(
     TITLE='GlassHouse · Glass', KIND='glass', ON_GLASS=' class="on"', ON_BOWL='',
-    ARIA='A wine glass seen from above. Circle the rim to play; tap inside to flick it; slide the strip on the right to pour water.',
+    ARIA='A wine glass seen from above. Circle the rim to play; tap inside to flick it; slide the strip along the bottom to pour water.',
     HINT_B='Touch to wake the glass',
-    HINT_SPAN='Circle the rim slowly, about a lap a second. The strip on the right pours water: slide it to bend the pitch.',
+    HINT_SPAN='Circle the rim slowly, about a lap a second. The strip along the bottom pours water: slide your thumb to bend the pitch.',
     PRESS_LABEL='finger', PRESS_RANGE='min="0.2" max="3" step="0.05" value="1"', PRESS_OUT='1.00 N',
     SHEET_TITLE='The glass',
     TOUCH='''<div class="row"><label>Finger</label><div class="seg" id="cond"><button data-v="wet" class="on">wet &amp; clean</button><button data-v="dry">dry</button><button data-v="oily">oily</button></div></div>''',
@@ -34,7 +34,7 @@ GLASS = dict(
 )
 BOWL = dict(
     TITLE='GlassHouse · Singing bowl', KIND='bowl', ON_GLASS='', ON_BOWL=' class="on"',
-    ARIA='A singing bowl seen from above. Circle the rim with the puja; tap inside to strike; the strip on the right pours water.',
+    ARIA='A singing bowl seen from above. Circle the rim with the puja; tap inside to strike; the strip along the bottom pours water.',
     HINT_B='Touch to wake the bowl',
     HINT_SPAN='Circle the outside of the rim slowly, about half a lap a second, and let it build. Tap inside to strike it.',
     PRESS_LABEL='puja', PRESS_RANGE='min="1" max="12" step="0.1" value="4"', PRESS_OUT='4.0 N',

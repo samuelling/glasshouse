@@ -185,13 +185,17 @@ registerProcessor('glass-bank', GlassBank);`;
     for (const cv of [stage, $('keys')]) { const r = cv.getBoundingClientRect(); cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
     const r = stage.getBoundingClientRect(); W = r.width; H = r.height; layout(); layoutKeys();
   }
-  new ResizeObserver(resize).observe(document.body);
+  // iOS changes the visible height (toolbars, rotation) without resizing <body>: watch the stage itself
+  const ro = new ResizeObserver(resize); ro.observe(stage); ro.observe($('keys')); ro.observe(document.body);
+  window.addEventListener('resize', resize); window.addEventListener('orientationchange', () => setTimeout(resize, 250));
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
   function layout() {
     const N = glasses.length; if (!N || !W) return;
     let best = null;
-    for (let c = 1; c <= N; c++) { const rows = Math.ceil(N / c), cw = W / c, ch = H / rows, s = Math.min(cw, ch / 1.12); if (!best || s > best.s) best = { c, rows, cw, ch, s }; }
-    const { c, rows, cw, ch } = best;
     const labH = 50;
+    // choose the grid that gives each glass the largest circle *including* its label, so every glass fits
+    for (let c = 1; c <= N; c++) { const rows = Math.ceil(N / c), cw = W / c, ch = H / rows, s = Math.min(cw * 0.44, (ch - labH) * 0.47); if (!best || s > best.s) best = { c, rows, cw, ch, s }; }
+    const { c, rows, cw, ch } = best;
     let maxR = 0; for (const g of glasses) if (g.info) maxR = Math.max(maxR, g.info.rMax, g.info.rimR * 1.12);
     const allow = Math.min(cw * 0.44, (ch - labH) * 0.47);
     if (maxR) pxPerM = allow / maxR;
@@ -289,13 +293,14 @@ registerProcessor('glass-bank', GlassBank);`;
     const ly = g.labelY;
     c.textAlign = 'center';
     c.fillStyle = g.held != null ? '#9fd3ff' : '#e8edf3';
-    c.font = `300 ${Math.max(18, Math.min(30, g.cellW * 0.09))}px Fraunces, Georgia, serif`;
+    c.font = `300 ${Math.max(18, Math.min(30, g.cellW * 0.09))}px "Cormorant Garamond", Georgia, serif`;
     c.fillText(isFinite(g.f) ? nn(ftom(g.f)) : '…', cx, ly);
     c.font = '11px "IBM Plex Mono", monospace';
     if (isFinite(g.f)) {
       const cents = Math.round((ftom(g.f) - Math.round(ftom(g.f))) * 100);
       c.fillStyle = g.inRange ? '#8794a6' : '#f2c38b';
-      c.fillText(`${g.f.toFixed(1)} Hz ${cents >= 0 ? '+' : '−'}${Math.abs(cents)}¢ · ${Math.round(g.fill * 100)}%${g.inRange ? '' : ' · out of range'}`, cx, ly + 16);
+      const narrow = g.cellW < 170;
+      c.fillText(narrow ? `${g.f.toFixed(0)} Hz · ${Math.round(g.fill * 100)}%${g.inRange ? '' : ' · out'}` : `${g.f.toFixed(1)} Hz ${cents >= 0 ? '+' : '−'}${Math.abs(cents)}¢ · ${Math.round(g.fill * 100)}%${g.inRange ? '' : ' · out of range'}`, cx, ly + 16);
     }
     g.labelBox = { x: cx - g.cellW * 0.4, y: ly - 30, w: g.cellW * 0.8, h: 52 };
   }
@@ -473,7 +478,7 @@ registerProcessor('glass-bank', GlassBank);`;
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; strobe += TAU * 0.8 * dt;
     for (const T of touches.values()) if (now - T.lastT > 40 && Math.abs(T.omega) > 1e-3) { T.omega *= Math.exp(-dt / 0.05); send({ t: 'finger', i: T.g.id, f: { theta: T.theta, omega: T.omega } }); }
-    if (now - layoutDirty > 300) { layoutDirty = now; layout(); }
+    if (now - layoutDirty > 300) { layoutDirty = now; const r = stage.getBoundingClientRect(); if (Math.abs(r.width - W) > 0.5 || Math.abs(r.height - H) > 0.5) resize(); else layout(); }
     sc.setTransform(dpr, 0, 0, dpr, 0, 0); sc.clearRect(0, 0, W, H);
     for (const g of glasses) drawGlass(g, now, dt);
     drawKeys();
@@ -481,6 +486,7 @@ registerProcessor('glass-bank', GlassBank);`;
   }
   window.__harp = { get glasses() { return glasses; }, get audio() { return audio; }, noteOn, noteOff, S };
   glasses = Array.from({ length: S.count }, (_, i) => newGlass(i));
+  setTimeout(() => $('hint').classList.add('gone'), 8000);
   resize(); tuneToScale();
   requestAnimationFrame(frame);
 })();
