@@ -116,6 +116,15 @@ details.how summary::after{content:"  +"}
 details.how[open] summary::after{content:"  –"}
 .how-body p{color:var(--dim);font-size:13.5px;margin:10px 0 0}
 .how-body b{color:var(--soft);font-weight:500}
+/* what this is */
+.about{max-width:540px;margin:46px auto 0;padding:0 8px;text-align:left}
+.about h2{font:300 italic 28px/1.1 "Cormorant Garamond",Georgia,serif;color:var(--soft);text-align:center;margin:0 0 18px;letter-spacing:.02em}
+.about h2::after{content:"";display:block;width:46px;height:1px;margin:14px auto 0;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.6}
+.about p{color:var(--dim);font-size:14.5px;line-height:1.75;margin:0 0 14px}
+.about p b{color:var(--soft);font-weight:400}
+.about p.lede{font:300 italic 20px/1.5 "Cormorant Garamond",Georgia,serif;color:var(--soft);text-align:center;margin-bottom:22px}
+.ghostlink{display:block;margin:20px auto 0;background:transparent;box-shadow:none;color:var(--faint);font:italic 15px "Cormorant Garamond",serif;letter-spacing:.04em}
+.ghostlink:hover{color:var(--soft)}
 footer{color:var(--faint);font:italic 14px "Cormorant Garamond",serif;text-align:center;padding:26px 10px 6px}
 @media (max-width:520px){
   main{padding:10px 10px 22px}
@@ -156,6 +165,15 @@ footer{color:var(--faint);font:italic 14px "Cormorant Garamond",serif;text-align
     <button id="insetBtn" class="on">side view</button>
     <button id="menuBtn">settings</button>
   </div>
+
+  <section class="about">
+    <h2>What this is</h2>
+    <p class="lede">Nothing here is a recording, and no oscillator is told what note to play. Every sound is computed, moment by moment, from the physics of a hammered singing bowl.</p>
+    <p>The <b>bowl</b> is solved as an elastic shell from its true shape: closed bottom, thickened lip, bronze's stiffness and density, resting free on a cushion. That solve gives its inharmonic partials, the long ring of bell bronze, and the slow beating that comes from the hammering not being perfectly even.</p>
+    <p>The <b>puja</b> is a stick pressed against the outside of the wall. It grips and slips its way around the bowl, and it can only push, never pull. Wrapped in leather, it stays in contact and the bowl swells into song. Bare wood is stiff, so once the bowl gets loud the stick starts to bounce off the wall, and you hear the rattle.</p>
+    <p>None of this is scripted. Rub the inside of the rim instead of the outside and the bowl won't sing. Real bowls behave the same way, and nobody wrote a rule for it here. Water inside lowers the pitch only a little, because a bowl's note comes from its size.</p>
+    <button id="physicsBtn" class="ghostlink">the physics, in detail</button>
+  </section>
 
   <footer>bronze, breath, a turning stick</footer>
 </main>
@@ -1093,6 +1111,11 @@ footer{color:var(--faint);font:italic 14px "Cormorant Garamond",serif;text-align
   $('insetBtn').onclick = () => { S.inset = !S.inset; $('inset').classList.toggle('on', S.inset); $('insetBtn').classList.toggle('on', S.inset); resize(); };
   $('menuBtn').onclick = () => $('sheet').classList.add('on');
   $('sheetClose').onclick = () => $('sheet').classList.remove('on');
+  $('physicsBtn').onclick = () => {
+    $('sheet').classList.add('on');
+    const d = document.querySelector('details.how'); d.open = true;
+    setTimeout(() => d.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  };
   $('sheet').addEventListener('pointerdown', e => { if (e.target.id === 'sheet') $('sheet').classList.remove('on'); });
 
   // ------------------------------------------------------------ physics

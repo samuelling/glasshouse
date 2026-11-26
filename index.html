@@ -116,6 +116,15 @@ details.how summary::after{content:"  +"}
 details.how[open] summary::after{content:"  –"}
 .how-body p{color:var(--dim);font-size:13.5px;margin:10px 0 0}
 .how-body b{color:var(--soft);font-weight:500}
+/* what this is */
+.about{max-width:540px;margin:46px auto 0;padding:0 8px;text-align:left}
+.about h2{font:300 italic 28px/1.1 "Cormorant Garamond",Georgia,serif;color:var(--soft);text-align:center;margin:0 0 18px;letter-spacing:.02em}
+.about h2::after{content:"";display:block;width:46px;height:1px;margin:14px auto 0;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.6}
+.about p{color:var(--dim);font-size:14.5px;line-height:1.75;margin:0 0 14px}
+.about p b{color:var(--soft);font-weight:400}
+.about p.lede{font:300 italic 20px/1.5 "Cormorant Garamond",Georgia,serif;color:var(--soft);text-align:center;margin-bottom:22px}
+.ghostlink{display:block;margin:20px auto 0;background:transparent;box-shadow:none;color:var(--faint);font:italic 15px "Cormorant Garamond",serif;letter-spacing:.04em}
+.ghostlink:hover{color:var(--soft)}
 footer{color:var(--faint);font:italic 14px "Cormorant Garamond",serif;text-align:center;padding:26px 10px 6px}
 @media (max-width:520px){
   main{padding:10px 10px 22px}
@@ -156,6 +165,16 @@ footer{color:var(--faint);font:italic 14px "Cormorant Garamond",serif;text-align
     <button id="insetBtn" class="on">side view</button>
     <button id="menuBtn">settings</button>
   </div>
+
+  <section class="about">
+    <h2>What this is</h2>
+    <p class="lede">Nothing here is a recording, and no oscillator is told what note to play. Every sound is computed, moment by moment, from the physics of a real wine glass.</p>
+    <p>The <b>glass</b> is solved as an elastic shell from its actual shape, wall thickness and material: crystal's stiffness and density. That solve is where its pitches, the way it flexes, and how long it rings come from.</p>
+    <p>The <b>water</b> is fluid flowing inside that shape. More water means more mass riding on the moving wall, so the pitch falls, slowly at first and then steeply near the brim. The strip along the bottom just asks the model how much to pour to reach a note.</p>
+    <p>Your <b>fingertip</b> is wet skin dragged around the rim, gripping and slipping hundreds of times a second. That stick–slip finds the glass's note by itself, the same way it does at a dinner table. The sound you hear is the glass's own vibration, radiated into a small room.</p>
+    <p>So the things a real glass does just happen. It sings only with a clean, wet finger. Pressing too hard makes it squeak. The tone sways as the vibration follows your finger around the rim.</p>
+    <button id="physicsBtn" class="ghostlink">the physics, in detail</button>
+  </section>
 
   <footer>crystal, water, a wet fingertip — and nothing else</footer>
 </main>
@@ -1090,6 +1109,11 @@ footer{color:var(--faint);font:italic 14px "Cormorant Garamond",serif;text-align
   $('insetBtn').onclick = () => { S.inset = !S.inset; $('inset').classList.toggle('on', S.inset); $('insetBtn').classList.toggle('on', S.inset); resize(); };
   $('menuBtn').onclick = () => $('sheet').classList.add('on');
   $('sheetClose').onclick = () => $('sheet').classList.remove('on');
+  $('physicsBtn').onclick = () => {
+    $('sheet').classList.add('on');
+    const d = document.querySelector('details.how'); d.open = true;
+    setTimeout(() => d.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  };
   $('sheet').addEventListener('pointerdown', e => { if (e.target.id === 'sheet') $('sheet').classList.remove('on'); });
 
   // ------------------------------------------------------------ physics

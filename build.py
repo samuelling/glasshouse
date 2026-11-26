@@ -30,6 +30,11 @@ GLASS = dict(
     SIZE_MIN='70',
     SPLIT_ROW='<div class="row"><label for="split">Imperfection <em id="splitOut">0.030%</em></label><input id="split" type="range" min="0" max="0.2" step="0.005" value="0.03"></div>',
     FOOTER='crystal, water, a wet fingertip — and nothing else',
+    ABOUT='''<p class="lede">Nothing here is a recording, and no oscillator is told what note to play. Every sound is computed, moment by moment, from the physics of a real wine glass.</p>
+    <p>The <b>glass</b> is solved as an elastic shell from its actual shape, wall thickness and material: crystal's stiffness and density. That solve is where its pitches, the way it flexes, and how long it rings come from.</p>
+    <p>The <b>water</b> is fluid flowing inside that shape. More water means more mass riding on the moving wall, so the pitch falls, slowly at first and then steeply near the brim. The strip along the bottom just asks the model how much to pour to reach a note.</p>
+    <p>Your <b>fingertip</b> is wet skin dragged around the rim, gripping and slipping hundreds of times a second. That stick–slip finds the glass's note by itself, the same way it does at a dinner table. The sound you hear is the glass's own vibration, radiated into a small room.</p>
+    <p>So the things a real glass does just happen. It sings only with a clean, wet finger. Pressing too hard makes it squeak. The tone sways as the vibration follows your finger around the rim.</p>''',
     HOW=(src / 'how-glass.html').read_text(),
 )
 BOWL = dict(
@@ -48,6 +53,10 @@ BOWL = dict(
     SIZE_MIN='50',
     SPLIT_ROW='<div class="row"><label for="split">Hammering asymmetry <em id="splitOut">0.400%</em></label><input id="split" type="range" min="0" max="1.5" step="0.01" value="0.4"></div>',
     FOOTER='bronze, breath, a turning stick',
+    ABOUT='''<p class="lede">Nothing here is a recording, and no oscillator is told what note to play. Every sound is computed, moment by moment, from the physics of a hammered singing bowl.</p>
+    <p>The <b>bowl</b> is solved as an elastic shell from its true shape: closed bottom, thickened lip, bronze's stiffness and density, resting free on a cushion. That solve gives its inharmonic partials, the long ring of bell bronze, and the slow beating that comes from the hammering not being perfectly even.</p>
+    <p>The <b>puja</b> is a stick pressed against the outside of the wall. It grips and slips its way around the bowl, and it can only push, never pull. Wrapped in leather, it stays in contact and the bowl swells into song. Bare wood is stiff, so once the bowl gets loud the stick starts to bounce off the wall, and you hear the rattle.</p>
+    <p>None of this is scripted. Rub the inside of the rim instead of the outside and the bowl won't sing. Real bowls behave the same way, and nobody wrote a rule for it here. Water inside lowers the pitch only a little, because a bowl's note comes from its size.</p>''',
     HOW=(src / 'how-bowl.html').read_text(),
 )
 

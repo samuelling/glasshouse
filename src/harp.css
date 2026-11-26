@@ -60,3 +60,9 @@ select{appearance:none;-webkit-appearance:none;background:#0b0f15;color:var(--in
   .hint-in{padding:9px 12px;max-width:300px}
   .hint-in span{font-size:12px}
 }
+
+.about{margin:4px 0 14px;padding:12px 14px;border-radius:16px;background:rgba(200,220,255,.03);box-shadow:inset 0 0 0 1px var(--line)}
+.about h4{margin:0 0 6px;font:300 italic 20px "Cormorant Garamond",serif;color:rgba(220,230,245,.8)}
+.about p{margin:0 0 8px;color:var(--dim);font-size:13px;line-height:1.6}
+.sheet-in{background:rgba(12,15,26,.95);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:inset 0 0 0 1px var(--line),0 -30px 80px -30px rgba(120,160,255,.25)}
+.sheet-head b{font:300 italic 24px "Cormorant Garamond",serif;color:rgba(220,230,245,.8)}

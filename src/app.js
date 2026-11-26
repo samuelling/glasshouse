@@ -61,6 +61,11 @@
   $('insetBtn').onclick = () => { S.inset = !S.inset; $('inset').classList.toggle('on', S.inset); $('insetBtn').classList.toggle('on', S.inset); resize(); };
   $('menuBtn').onclick = () => $('sheet').classList.add('on');
   $('sheetClose').onclick = () => $('sheet').classList.remove('on');
+  $('physicsBtn').onclick = () => {
+    $('sheet').classList.add('on');
+    const d = document.querySelector('details.how'); d.open = true;
+    setTimeout(() => d.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  };
   $('sheet').addEventListener('pointerdown', e => { if (e.target.id === 'sheet') $('sheet').classList.remove('on'); });
 
   // ------------------------------------------------------------ physics
