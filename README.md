@@ -28,6 +28,15 @@ This page holds 4–6 independently simulated glasses, built for iPad multi-touc
 
 - **Tune to scale:** the auto-tuner sizes each glass (pitch scales roughly as t/R²), then pours water to land exactly on the note. It solves the full wet model and polishes the result with secant steps.
 - **Spread sizes for keyboard:** staggers the glass sizes so their water ranges tile about 3.5 octaves.
-- **Keys:** the on-screen keys, or a Web MIDI keyboard in Chrome or Edge, set pitch by pouring water into whichever free glass can reach the note. Water only lowers pitch, about 9–11 semitones per glass. With **Keys rub too** on, a held key also rubs its glass (armonica mode); velocity sets finger pressure and the mod wheel sets pressure globally. iPad and iPhone browsers don't implement Web MIDI, so on iPad use the on-screen keys.
+- **Keys:** the on-screen keys, or a Web MIDI keyboard in Chrome or Edge, set pitch by pouring water into whichever free glass can reach the note. Water only lowers pitch, about 9–11 semitones per glass. With **Keys rub too** on, a held key also rubs its glass (armonica mode); velocity sets finger pressure and the mod wheel sets pressure globally. iPad and iPhone browsers don't implement Web MIDI; the iOS app below adds MIDI there.
 
 `src/` holds the sources (`physics.js`, `dsp.js`, `app.js`, `harp.js`). `python3 build.py` assembles the single-file `index.html` and `harp.html`. `test/` holds the node validation scripts.
+
+## iOS app (`ios/`)
+
+A SwiftUI app for iPhone and iPad that runs the same three pages, bundled and offline, in a WKWebView served over a `glasshouse://` scheme, and adds what a browser can't: Core MIDI input from USB, Bluetooth and network devices (with Apple's Bluetooth MIDI pairing panel), a playback audio session that ignores the silent switch, haptics on the strip's semitones and on taps, and a screen that stays awake while playing. `python3 build.py` also writes the app's copies of the pages to `ios/GlassHouse/Web/`, with the fonts inlined.
+
+- **CI** (`.github/workflows/build.yml`): checks the bundled pages match `src/`, builds for device, and runs the app in the simulator with `-selftest`, where each page reports whether WebKit gave it a secure context, the AudioWorklet and the physics.
+- **TestFlight** (`.github/workflows/testflight.yml`): archives and uploads to App Store Connect. Needs the repository secrets `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_P8`, and an app record for `com.samuelling.glasshouse`.
+- **Store listing** (`AppStore/`): `Listing.md` holds the text; `tools/shots.js` captures the screenshots and `AppStore/frame.py` captions them; the Listing screenshots workflow uploads them. Privacy policy and support pages: `privacy.html`, `support.html`.
+

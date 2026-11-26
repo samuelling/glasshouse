@@ -25,12 +25,17 @@ FONTS = [  # (family, weight, style, file) bundled so the app works offline and 
 ]
 
 
-def app_variant(t):
-    """Same page for the iOS app: fonts inlined, no requests leave the device."""
+def fonts(t, app):
+    """Self-hosted fonts: the web pages load them from assets/fonts/ (no third-party requests);
+    the iOS app inlines them, so nothing leaves the device."""
     import base64, re
+    def src(f):
+        if app:
+            return 'data:font/woff2;base64,' + base64.b64encode((root / 'assets' / 'fonts' / f).read_bytes()).decode()
+        return 'assets/fonts/' + f
     faces = ''.join(
-        "@font-face{font-family:'%s';font-weight:%d;font-style:%s;font-display:block;src:url(data:font/woff2;base64,%s) format('woff2')}"
-        % (fam, w, st, base64.b64encode((root / 'assets' / 'fonts' / f).read_bytes()).decode()) for fam, w, st, f in FONTS)
+        "@font-face{font-family:'%s';font-weight:%d;font-style:%s;font-display:%s;src:url(%s) format('woff2')}"
+        % (fam, w, st, 'block' if app else 'swap', src(f)) for fam, w, st, f in FONTS)
     t, n = re.subn(r'<link rel="preconnect"[^>]*>\s*<link href="https://fonts.googleapis.com[^>]*>', '<style>' + faces + '</style>', t)
     assert n == 1, 'font link not found'
     assert 'googleapis' not in t
@@ -38,11 +43,11 @@ def app_variant(t):
 
 
 def write(out, t):
-    (root / out).write_text(t)
+    (root / out).write_text(fonts(t, False))
     print(out, len(t), 'bytes')
     app = root / 'ios' / 'GlassHouse' / 'Web' / out
     app.parent.mkdir(parents=True, exist_ok=True)
-    app.write_text(app_variant(t))
+    app.write_text(fonts(t, True))
 
 
 GLASS = dict(

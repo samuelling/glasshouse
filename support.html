@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GlassHouse · Support</title>
+<meta name="description" content="How to play GlassHouse, the physically modelled singing glass, singing bowl and glass harp.">
+<meta name="theme-color" content="#04050a">
+<style>
+@font-face{font-family:'Cormorant Garamond';font-weight:300;font-style:normal;font-display:swap;src:url(assets/fonts/cormorant-garamond-latin-300-normal.woff2) format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-weight:300;font-style:italic;font-display:swap;src:url(assets/fonts/cormorant-garamond-latin-300-italic.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:300;font-style:normal;font-display:swap;src:url(assets/fonts/inter-latin-300-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:400;font-style:normal;font-display:swap;src:url(assets/fonts/inter-latin-400-normal.woff2) format('woff2')}
+:root{--ink:#e6ecf6;--soft:rgba(220,230,245,.78);--dim:rgba(200,212,232,.5);--line:rgba(190,210,240,.12);--accent:#bcdcff}
+html,body{margin:0;color:var(--ink);font:300 16px/1.65 Inter,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;background:radial-gradient(120% 70% at 50% 0%,#0d1222 0%,#06070d 55%,#030409 100%) fixed #04050a}
+main{max-width:640px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top)) 22px 60px}
+h1{font:300 40px/1.1 "Cormorant Garamond",Georgia,serif;letter-spacing:.03em;margin:0 0 6px}
+h1 i{color:var(--accent)}
+h2{font:italic 300 24px/1.2 "Cormorant Garamond",Georgia,serif;color:var(--accent);margin:34px 0 6px}
+p,li{color:var(--soft)} ul,ol{padding-left:20px} li{margin:4px 0}
+.dim{color:var(--dim);font-size:13px;letter-spacing:.02em}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--line)}
+hr{border:0;border-top:1px solid var(--line);margin:40px 0 18px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Glass<i>House</i> · support</h1>
+  <p class="dim">A singing wine glass, a Tibetan singing bowl and a glass harp, physically modelled. For iPhone, iPad and the web.</p>
+
+  <h2>Making the glass sing</h2>
+  <ul>
+    <li>Circle the rim slowly and steadily, about one lap a second. Real glasses need a moment to catch, and so does this one.</li>
+    <li>The tone comes from friction between finger and glass. If you get a squeak instead, ease off the pressure in the menu (finger), or slow down.</li>
+    <li>Tap inside the glass to flick it with a fingernail.</li>
+    <li>Slide your thumb along the strip at the bottom to pour water in or out. More water, lower pitch: it's the water's mass loading the wall, as in a real glass.</li>
+  </ul>
+
+  <h2>The singing bowl</h2>
+  <p>Circle the outside of the rim slowly with the puja (the leather-wrapped or bare wooden stick), about half a lap a second, and let it build. With bare wood, once the bowl gets loud the stick starts to bounce off the wall and rattles, exactly as a real one does. A bowl's pitch is set mostly by its size (Size, in the menu); water from the strip lowers it only a little.</p>
+
+  <h2>The glass harp</h2>
+  <p>Four to six glasses, each tuned to a note by the amount of water in it. Play several at once with several fingers, or from the keyboard below them. Tap a glass's note name to retune it or change its shape.</p>
+
+  <h2>MIDI keyboards</h2>
+  <ul>
+    <li>Connect a USB MIDI keyboard (with Apple's camera adapter on Lightning devices) and GlassHouse finds it by itself. Its name appears in the menu under MIDI.</li>
+    <li>For a Bluetooth MIDI keyboard, open the menu and choose Bluetooth MIDI, then pick your device.</li>
+    <li>On the glass, a key sets the pitch by pouring exactly enough water. On the harp, each key pours water into whichever free glass can reach its note; switch on Keys rub too and the key also rubs that glass. The mod wheel sets finger pressure.</li>
+  </ul>
+
+  <h2>No sound?</h2>
+  <ul>
+    <li>Turn the volume up. GlassHouse plays even with the silent switch on.</li>
+    <li>Touch the glass once: audio starts on the first touch.</li>
+    <li>If another app is playing audio, GlassHouse takes over when you start playing.</li>
+  </ul>
+
+  <h2>How it works</h2>
+  <p>Nothing is sampled. The glass is solved as an elastic shell with the finite element method, the water as potential flow inside it, and the finger as stick-slip friction on the rim, all computed live on your device. Open "physics, in detail" in the app for the full story.</p>
+
+  <h2>Contact</h2>
+  <p>Found a bug or have a question? Open an issue at <a href="https://github.com/samuelling/glasshouse/issues">github.com/samuelling/glasshouse/issues</a>.</p>
+
+  <p><a href="privacy.html">Privacy policy</a></p>
+  <hr>
+  <p class="dim"><a href="./">← back to GlassHouse</a></p>
+</main>
+</body>
+</html>
