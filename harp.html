@@ -74,6 +74,11 @@ select{appearance:none;-webkit-appearance:none;background:#0b0f15;color:var(--in
 .about p{margin:0 0 8px;color:var(--dim);font-size:13px;line-height:1.6}
 .sheet-in{background:rgba(12,15,26,.95);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:inset 0 0 0 1px var(--line),0 -30px 80px -30px rgba(120,160,255,.25)}
 .sheet-head b{font:300 italic 24px "Cormorant Garamond",serif;color:rgba(220,230,245,.8)}
+
+.native-only{display:none !important}
+body.native .native-only{display:inline-block !important}
+body.native .web-only{display:none !important}
+.keyopts .bt{padding:5px 10px;font-size:11.5px;flex:0 0 auto}
 </style>
 </head>
 <body>
@@ -86,14 +91,14 @@ select{appearance:none;-webkit-appearance:none;background:#0b0f15;color:var(--in
 
   <div class="stagewrap">
     <canvas id="stage" aria-label="Glass harp. Rub rims with one finger per glass; tap inside a glass to flick it; tap a label to retune."></canvas>
-    <div id="hint" class="hint"><div class="hint-in"><b>Touch to wake the glasses</b><span>One finger per rim. Tap a note name to retune; the keys pour water.</span><small>On iPhone or iPad, turn off silent mode to hear Web Audio.</small></div></div>
+    <div id="hint" class="hint"><div class="hint-in"><b>Touch to wake the glasses</b><span>One finger per rim. Tap a note name to retune; the keys pour water.</span><small class="web-only">If you hear nothing on an iPhone, check the silent switch.</small></div></div>
     <div id="busy" class="busy"><div class="spin"></div><span id="busyMsg">Tuning…</span></div>
   </div>
 
   <div class="keysbar">
     <div class="keyopts">
       <label class="tog"><input type="checkbox" id="autorub"><span>Keys rub too <em>(armonica)</em></span></label>
-      <span id="midiStat" class="midi">MIDI: —</span>
+      <span id="midiStat" class="midi">MIDI: —</span><button id="btMidiBtn" class="native-only bt">Bluetooth MIDI</button>
     </div>
     <canvas id="keys" aria-label="Keyboard: each key fills a glass with water to that pitch"></canvas>
   </div>
@@ -976,6 +981,9 @@ select{appearance:none;-webkit-appearance:none;background:#0b0f15;color:var(--in
   };
   const SHAPES = { bordeaux: 'Bordeaux', burgundy: 'Burgundy balloon', tulip: 'Tulip (flared rim)', snifter: 'Brandy snifter', flute: 'Champagne flute' };
   const MATERIALS = { leadCrystal: 'Lead crystal', sodaLime: 'Soda-lime glass', borosilicate: 'Borosilicate', fusedQuartz: 'Fused quartz' };
+  const NATIVE = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.gh);
+  const native = m => { if (NATIVE) try { window.webkit.messageHandlers.gh.postMessage(m); } catch (_) {} };
+  if (NATIVE) document.body.classList.add('native');
   const S = { count: 6, root: 72, scale: 'majorPent', material: 'leadCrystal', tRim: 1.2e-3, FN: 1.0, cond: 'wet', reverb: 0.3, vol: 0.8, autorub: false };
 
   // ------------------------------------------------------------ physics service (Web Worker)
@@ -1092,6 +1100,7 @@ registerProcessor('glass-bank', GlassBank);`;
   }
   async function startAudio() {
     if (audio) { if (audio.ctx.state !== 'running') audio.ctx.resume(); return; }
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (_) {}
     const AC = window.AudioContext || window.webkitAudioContext, ctx = new AC({ latencyHint: 'interactive' });
     const queue = []; audio = { ctx, send: m => queue.push(m) }; ctx.resume();
     const src = $('dsp-src').textContent;
@@ -1285,7 +1294,7 @@ registerProcessor('glass-bank', GlassBank);`;
     const p = pos(e, stage), h = hit(p.x, p.y); if (!h) return;
     if (h.label) { openEditor(h.g); return; }
     const g = h.g;
-    if (h.inner) { send({ t: 'tap', i: g.id, theta: h.th, force: 4 + 6 * Math.min(1, h.d / g.R) }); return; }
+    if (h.inner) { send({ t: 'tap', i: g.id, theta: h.th, force: 4 + 6 * Math.min(1, h.d / g.R) }); native({ cmd: 'tap', v: 0.6 }); return; }
     if (g.touch != null) return;
     stage.setPointerCapture(e.pointerId);
     g.touch = e.pointerId; g.lastUse = performance.now();
@@ -1376,20 +1385,27 @@ registerProcessor('glass-bank', GlassBank);`;
   const keyUp = e => { const m = keyTouches.get(e.pointerId); if (m == null) return; keyTouches.delete(e.pointerId); noteOff(m); };
   kc.addEventListener('pointerup', keyUp); kc.addEventListener('pointercancel', keyUp);
 
+  function onMIDI(s, d1, d2) {
+    const type = s & 0xf0;
+    if (type === 0x90 && d2 > 0) noteOn(d1, d2);
+    else if (type === 0x80 || (type === 0x90 && d2 === 0)) noteOff(d1);
+    else if (type === 0xb0 && d1 === 1) { S.FN = 0.2 + 2.8 * d2 / 127; $('press').value = S.FN; $('pressOut').textContent = S.FN.toFixed(2) + ' N'; glasses.forEach(g => send({ t: 'finger', i: g.id, f: { FN: S.FN } })); }
+  }
+  // In the iOS app, Core MIDI (USB, Bluetooth, network, other apps) arrives through the shell
+  window.GHNative = {
+    midi: onMIDI,
+    devices(names) { const st = $('midiStat'); st.textContent = names.length ? 'MIDI: ' + names.join(', ') + ' · mod wheel = pressure' : 'MIDI: none connected'; st.classList.toggle('on', names.length > 0); },
+  };
+  if (NATIVE) { $('btMidiBtn').onclick = () => native({ cmd: 'btmidi' }); native({ cmd: 'ready' }); }
   // Web MIDI (Chrome/Edge/Firefox on desktop & Android; not available in any iPad/iPhone browser)
-  (async () => {
+  if (!NATIVE) (async () => {
     const st = $('midiStat');
     if (!navigator.requestMIDIAccess) { st.textContent = 'MIDI: not supported by this browser (use the keys)'; return; }
     try {
       const acc = await navigator.requestMIDIAccess();
       const hook = () => {
         const names = [];
-        acc.inputs.forEach(inp => { names.push(inp.name); inp.onmidimessage = ev => {
-          const [s, d1, d2] = ev.data, type = s & 0xf0;
-          if (type === 0x90 && d2 > 0) noteOn(d1, d2);
-          else if (type === 0x80 || (type === 0x90 && d2 === 0)) noteOff(d1);
-          else if (type === 0xb0 && d1 === 1) { S.FN = 0.2 + 2.8 * d2 / 127; $('press').value = S.FN; $('pressOut').textContent = S.FN.toFixed(2) + ' N'; glasses.forEach(g => send({ t: 'finger', i: g.id, f: { FN: S.FN } })); }
-        }; });
+        acc.inputs.forEach(inp => { names.push(inp.name); inp.onmidimessage = ev => onMIDI(ev.data[0], ev.data[1], ev.data[2]); });
         st.textContent = names.length ? 'MIDI: ' + names.join(', ') + ' · mod wheel = pressure' : 'MIDI: no input connected';
         st.classList.toggle('on', names.length > 0);
       };

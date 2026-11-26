@@ -10,6 +10,10 @@
   const EXAG = BOWL ? 8 : 35;    // visual exaggeration of rim motion
   const OUT_PA = 0.8;            // pressure (Pa) that maps to digital full scale before volume
   const FILL_MAX = 0.95;
+  // iOS app shell (WKWebView) bridge: MIDI in, haptics and Bluetooth MIDI out
+  const NATIVE = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.gh);
+  const native = m => { if (NATIVE) try { window.webkit.messageHandlers.gh.postMessage(m); } catch (_) {} };
+  if (NATIVE) document.body.classList.add('native');
 
   const S = BOWL
     ? { shape: 'thadobati', material: 'bellBronze', tScale: 1, scale: 1, fill: 0, FN: 4.0, stick: 'leather', side: 1, mallet: 'felt', split: 4e-3, reverb: 0.35, vol: 0.8, inset: true, snap: 'free' }
@@ -208,6 +212,8 @@ registerProcessor('glass-proc', GlassProc);`;
   }
   async function startAudio() {
     if (audio) { if (audio.ctx.state !== 'running') audio.ctx.resume(); return; }
+    // play through the iPhone's silent switch, like an instrument (Safari 16.4+ and the app)
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (_) {}
     const AC = window.AudioContext || window.webkitAudioContext;
     const ctx = new AC({ latencyHint: 'interactive' });
     const queue = []; audio = { ctx, send: m => queue.push(m) };
@@ -286,6 +292,8 @@ registerProcessor('glass-proc', GlassProc);`;
     if (!table) return;
     let hz = hzOfX(x);
     if (S.snap === 'semi') { const r = pitchRange(); hz = clamp(440 * Math.pow(2, (Math.round(midiOf(hz)) - 69) / 12), r.lo, r.hi); }
+    const semi = Math.round(midiOf(hz));
+    if (semi !== STRIP.semi) { if (STRIP.semi != null) native({ cmd: 'tick' }); STRIP.semi = semi; }
     STRIP.target = hz; setFill(fillForPitch(hz));
   }
   top.addEventListener('pointerdown', e => {
@@ -308,6 +316,7 @@ registerProcessor('glass-proc', GlassProc);`;
       if (BOWL) { const M = MALLET[S.mallet]; send({ t: 'tap', theta: p.th, force: M.force * (0.5 + 0.5 * Math.min(1, p.r / R)), dur: M.dur }); }
       else send({ t: 'tap', theta: p.th, force: 4 + 6 * Math.min(1, p.r / R) });
       flashes.push({ th: p.th, t: performance.now() });
+      native({ cmd: 'tap', v: 0.7 });
     }
   }, { passive: false });
   top.addEventListener('pointermove', e => {
@@ -713,6 +722,24 @@ registerProcessor('glass-proc', GlassProc);`;
     }
     requestAnimationFrame(frame);
   }
+
+  // MIDI from the app: a note pours the water to that pitch; the mod wheel sets the pressure
+  const pressEl = $('press');
+  window.GHNative = {
+    midi(st, d1, d2) {
+      const type = st & 0xf0;
+      if (type === 0x90 && d2 > 0 && table) {
+        const r = pitchRange(), hz = clamp(440 * Math.pow(2, (d1 - 69) / 12), r.lo, r.hi);
+        setFill(fillForPitch(hz));
+      } else if (type === 0xb0 && d1 === 1) {
+        const v = +pressEl.min + (+pressEl.max - +pressEl.min) * d2 / 127;
+        pressEl.value = v; paintRange(pressEl); setPress(v);
+      }
+    },
+    devices(names) { const el = $('midiNames'); if (el) el.textContent = names.length ? names.join(', ') : 'none connected'; },
+  };
+  if ($('btMidiBtn')) $('btMidiBtn').onclick = () => native({ cmd: 'btmidi' });
+  native({ cmd: 'ready' });
 
   window.__glasshouse = { P, get center() { return { cx, cy }; }, get rimPx() { return glass ? glass.geo.rimR * pxPerM : 0; }, get strip() { return strip; }, get table() { return table; }, get snap() { return snap; }, get audio() { return audio; }, get wet() { return wet; }, S };
   $('xlabel').textContent = `rim motion ×${EXAG}`;

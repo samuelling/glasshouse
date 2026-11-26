@@ -13,9 +13,36 @@ def inline(t, css, app):
     return t
 
 
+FONTS = [  # (family, weight, style, file) bundled so the app works offline and makes no network requests
+    ('Cormorant Garamond', 300, 'normal', 'cormorant-garamond-latin-300-normal.woff2'),
+    ('Cormorant Garamond', 400, 'normal', 'cormorant-garamond-latin-400-normal.woff2'),
+    ('Cormorant Garamond', 300, 'italic', 'cormorant-garamond-latin-300-italic.woff2'),
+    ('Cormorant Garamond', 400, 'italic', 'cormorant-garamond-latin-400-italic.woff2'),
+    ('Inter', 300, 'normal', 'inter-latin-300-normal.woff2'),
+    ('Inter', 400, 'normal', 'inter-latin-400-normal.woff2'),
+    ('Inter', 500, 'normal', 'inter-latin-500-normal.woff2'),
+    ('IBM Plex Mono', 400, 'normal', 'ibm-plex-mono-latin-400-normal.woff2'),
+]
+
+
+def app_variant(t):
+    """Same page for the iOS app: fonts inlined, no requests leave the device."""
+    import base64, re
+    faces = ''.join(
+        "@font-face{font-family:'%s';font-weight:%d;font-style:%s;font-display:block;src:url(data:font/woff2;base64,%s) format('woff2')}"
+        % (fam, w, st, base64.b64encode((root / 'assets' / 'fonts' / f).read_bytes()).decode()) for fam, w, st, f in FONTS)
+    t, n = re.subn(r'<link rel="preconnect"[^>]*>\s*<link href="https://fonts.googleapis.com[^>]*>', '<style>' + faces + '</style>', t)
+    assert n == 1, 'font link not found'
+    assert 'googleapis' not in t
+    return t
+
+
 def write(out, t):
     (root / out).write_text(t)
     print(out, len(t), 'bytes')
+    app = root / 'ios' / 'GlassHouse' / 'Web' / out
+    app.parent.mkdir(parents=True, exist_ok=True)
+    app.write_text(app_variant(t))
 
 
 GLASS = dict(

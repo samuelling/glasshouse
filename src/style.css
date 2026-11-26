@@ -126,3 +126,10 @@ footer{color:var(--faint);font:italic 14px "Cormorant Garamond",serif;text-align
   .grid2{grid-template-columns:1fr}
   td.bar{width:26%}
 }
+
+/* app shell */
+.native-only{display:none !important}
+body.native .native-only{display:flex !important}
+body.native .web-only{display:none !important}
+.midirow{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--faint);font-size:12.5px}
+.midirow button{flex:0 0 auto}

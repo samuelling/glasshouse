@@ -14,6 +14,9 @@
   };
   const SHAPES = { bordeaux: 'Bordeaux', burgundy: 'Burgundy balloon', tulip: 'Tulip (flared rim)', snifter: 'Brandy snifter', flute: 'Champagne flute' };
   const MATERIALS = { leadCrystal: 'Lead crystal', sodaLime: 'Soda-lime glass', borosilicate: 'Borosilicate', fusedQuartz: 'Fused quartz' };
+  const NATIVE = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.gh);
+  const native = m => { if (NATIVE) try { window.webkit.messageHandlers.gh.postMessage(m); } catch (_) {} };
+  if (NATIVE) document.body.classList.add('native');
   const S = { count: 6, root: 72, scale: 'majorPent', material: 'leadCrystal', tRim: 1.2e-3, FN: 1.0, cond: 'wet', reverb: 0.3, vol: 0.8, autorub: false };
 
   // ------------------------------------------------------------ physics service (Web Worker)
@@ -130,6 +133,7 @@ registerProcessor('glass-bank', GlassBank);`;
   }
   async function startAudio() {
     if (audio) { if (audio.ctx.state !== 'running') audio.ctx.resume(); return; }
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (_) {}
     const AC = window.AudioContext || window.webkitAudioContext, ctx = new AC({ latencyHint: 'interactive' });
     const queue = []; audio = { ctx, send: m => queue.push(m) }; ctx.resume();
     const src = $('dsp-src').textContent;
@@ -323,7 +327,7 @@ registerProcessor('glass-bank', GlassBank);`;
     const p = pos(e, stage), h = hit(p.x, p.y); if (!h) return;
     if (h.label) { openEditor(h.g); return; }
     const g = h.g;
-    if (h.inner) { send({ t: 'tap', i: g.id, theta: h.th, force: 4 + 6 * Math.min(1, h.d / g.R) }); return; }
+    if (h.inner) { send({ t: 'tap', i: g.id, theta: h.th, force: 4 + 6 * Math.min(1, h.d / g.R) }); native({ cmd: 'tap', v: 0.6 }); return; }
     if (g.touch != null) return;
     stage.setPointerCapture(e.pointerId);
     g.touch = e.pointerId; g.lastUse = performance.now();
@@ -414,20 +418,27 @@ registerProcessor('glass-bank', GlassBank);`;
   const keyUp = e => { const m = keyTouches.get(e.pointerId); if (m == null) return; keyTouches.delete(e.pointerId); noteOff(m); };
   kc.addEventListener('pointerup', keyUp); kc.addEventListener('pointercancel', keyUp);
 
+  function onMIDI(s, d1, d2) {
+    const type = s & 0xf0;
+    if (type === 0x90 && d2 > 0) noteOn(d1, d2);
+    else if (type === 0x80 || (type === 0x90 && d2 === 0)) noteOff(d1);
+    else if (type === 0xb0 && d1 === 1) { S.FN = 0.2 + 2.8 * d2 / 127; $('press').value = S.FN; $('pressOut').textContent = S.FN.toFixed(2) + ' N'; glasses.forEach(g => send({ t: 'finger', i: g.id, f: { FN: S.FN } })); }
+  }
+  // In the iOS app, Core MIDI (USB, Bluetooth, network, other apps) arrives through the shell
+  window.GHNative = {
+    midi: onMIDI,
+    devices(names) { const st = $('midiStat'); st.textContent = names.length ? 'MIDI: ' + names.join(', ') + ' · mod wheel = pressure' : 'MIDI: none connected'; st.classList.toggle('on', names.length > 0); },
+  };
+  if (NATIVE) { $('btMidiBtn').onclick = () => native({ cmd: 'btmidi' }); native({ cmd: 'ready' }); }
   // Web MIDI (Chrome/Edge/Firefox on desktop & Android; not available in any iPad/iPhone browser)
-  (async () => {
+  if (!NATIVE) (async () => {
     const st = $('midiStat');
     if (!navigator.requestMIDIAccess) { st.textContent = 'MIDI: not supported by this browser (use the keys)'; return; }
     try {
       const acc = await navigator.requestMIDIAccess();
       const hook = () => {
         const names = [];
-        acc.inputs.forEach(inp => { names.push(inp.name); inp.onmidimessage = ev => {
-          const [s, d1, d2] = ev.data, type = s & 0xf0;
-          if (type === 0x90 && d2 > 0) noteOn(d1, d2);
-          else if (type === 0x80 || (type === 0x90 && d2 === 0)) noteOff(d1);
-          else if (type === 0xb0 && d1 === 1) { S.FN = 0.2 + 2.8 * d2 / 127; $('press').value = S.FN; $('pressOut').textContent = S.FN.toFixed(2) + ' N'; glasses.forEach(g => send({ t: 'finger', i: g.id, f: { FN: S.FN } })); }
-        }; });
+        acc.inputs.forEach(inp => { names.push(inp.name); inp.onmidimessage = ev => onMIDI(ev.data[0], ev.data[1], ev.data[2]); });
         st.textContent = names.length ? 'MIDI: ' + names.join(', ') + ' · mod wheel = pressure' : 'MIDI: no input connected';
         st.classList.toggle('on', names.length > 0);
       };

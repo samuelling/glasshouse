@@ -1,0 +1,87 @@
+name: iOS build
+
+# 1. The app's bundled pages must match src/ (run `python3 build.py` after editing src/).
+# 2. Compile the app for a device, unsigned.
+# 3. Run it in the simulator with -selftest: each bundled page reports whether WebKit gives it
+#    a secure context, AudioWorklet and the physics, and screenshots are saved as an artifact.
+on:
+  push:
+    paths: ['ios/**', 'src/**', 'build.py', 'assets/**', '.github/workflows/build.yml']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pages-in-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 build.py
+          git diff --stat --exit-code -- ios/GlassHouse/Web index.html bowl.html harp.html || \
+            { echo "::error::Bundled pages are stale: run python3 build.py and commit"; exit 1; }
+
+  device:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build for device (unsigned)
+        run: |
+          set -o pipefail
+          cd ios
+          xcodebuild -project GlassHouse.xcodeproj -scheme GlassHouse -sdk iphoneos -destination 'generic/platform=iOS' \
+            -configuration Release CODE_SIGNING_ALLOWED=NO build 2>&1 | tee build.log | grep -E "error:|warning:|BUILD" || true
+          grep -q "BUILD SUCCEEDED" build.log
+      - name: Annotations
+        if: always()
+        run: |
+          grep -E "^/.*\.swift:[0-9]+:[0-9]+: (warning|error):" ios/build.log | sort -u | head -40 | \
+            sed -E 's#^.*/(GlassHouse/[^:]+):([0-9]+):[0-9]+: (warning|error): (.*)$#::\3 file=ios/\1,line=\2::\4#' || true
+
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build for simulator
+        run: |
+          set -o pipefail
+          cd ios
+          xcodebuild -project GlassHouse.xcodeproj -scheme GlassHouse -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' -configuration Debug -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee sim.log | grep -E "error:|BUILD" || true
+          grep -q "BUILD SUCCEEDED" sim.log
+      - name: Self-test in the simulator
+        run: |
+          APP="$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/GlassHouse.app"
+          ls "$APP" | head -30
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)['devices']
+          c=[x for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPhone')]
+          print(c[0]['udid'])")
+          echo "Simulator $UDID"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
+          mkdir -p shots
+          xcrun simctl launch --stdout="$PWD/selftest.out" --stderr="$PWD/selftest.err" "$UDID" com.samuelling.glasshouse -selftest
+          for i in $(seq 1 40); do
+            sleep 3
+            [ $((i % 4)) -eq 0 ] && xcrun simctl io "$UDID" screenshot "shots/shot-$i.png" >/dev/null 2>&1 || true
+            grep -q "SELFTEST DONE" selftest.out 2>/dev/null && break
+          done
+          xcrun simctl io "$UDID" screenshot shots/final.png >/dev/null 2>&1 || true
+          echo "---- self-test ----"; cat selftest.out || true
+          echo "---- stderr (tail) ----"; tail -20 selftest.err || true
+          grep "^SELFTEST {" selftest.out | while read -r line; do echo "::notice::$line"; done
+          grep -q "SELFTEST DONE" selftest.out || { echo "::error::self-test did not finish"; exit 1; }
+          if grep "^SELFTEST {" selftest.out | grep -qE '"error"|"physics":false'; then echo "::error::a page failed to load its physics"; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: simulator
+          path: |
+            shots/
+            selftest.out
+            selftest.err
+          if-no-files-found: ignore
