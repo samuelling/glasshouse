@@ -46,6 +46,7 @@ jobs:
         env:
           P8: ${{ secrets.ASC_KEY_P8 }}
           KID: ${{ secrets.ASC_KEY_ID }}
+          IID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           mkdir -p "$RUNNER_TEMP/asc"
           # Normalise common paste damage (CRLF, literal \n, one-line keys, stray spaces/quotes),
@@ -68,6 +69,10 @@ jobs:
           open(sys.argv[1], 'w').write(f'-----BEGIN {kind}-----\n' + '\n'.join(lines) + f'\n-----END {kind}-----\n')
           PY
           echo "ASC_KEY_PATH=$RUNNER_TEMP/asc/AuthKey_$KID.p8" >> "$GITHUB_ENV"
+          # Which key ID / issuer did we get? Compare fingerprints with the known public values (never printed).
+          fp() { printf '%s' "$1" | tr -d '[:space:]' | shasum -a 256 | cut -c1-8; }
+          echo "key id fp $(fp "$KID") (len ${#KID}); WM4M25T55R=$(fp WM4M25T55R) 372K8LR7NJ=$(fp 372K8LR7NJ)"
+          echo "issuer fp $(fp "$IID") (len ${#IID}); expected $(fp 59c9b118-d162-4676-9022-d502265defe3)"
 
       - name: Archive
         env:
