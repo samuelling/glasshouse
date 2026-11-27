@@ -48,7 +48,25 @@ jobs:
           KID: ${{ secrets.ASC_KEY_ID }}
         run: |
           mkdir -p "$RUNNER_TEMP/asc"
-          printf '%s\n' "$P8" > "$RUNNER_TEMP/asc/AuthKey_$KID.p8"
+          # Normalise common paste damage (CRLF, literal \n, one-line keys, stray spaces/quotes),
+          # then report the key's shape (never its contents).
+          P8="$P8" python3 - "$RUNNER_TEMP/asc/AuthKey_$KID.p8" <<'PY'
+          import os, re, sys, base64
+          raw = os.environ['P8']
+          t = raw.replace('\\n', '\n').replace('\r', '').strip().strip('"').strip("'")
+          m = re.search(r'-----BEGIN ([A-Z ]+)-----(.*?)-----END \1-----', t, re.S)
+          body = re.sub(r'[^A-Za-z0-9+/=]', '', m.group(2) if m else t)
+          kind = m.group(1) if m else 'PRIVATE KEY'
+          ok = True
+          try: der = base64.b64decode(body, validate=True)
+          except Exception: ok = False; der = b''
+          print(f"key text: {len(raw)} chars, {raw.count(chr(10))+1} lines, header={'yes' if m else 'no'} ({kind}), base64 body {len(body)} chars, decodes={'yes' if ok else 'no'} to {len(der)} bytes")
+          if not m or not ok or len(der) < 100:
+              print('::error::ASC_KEY_P8 does not look like an App Store Connect .p8 key. Paste the whole file, including the BEGIN and END lines.')
+              sys.exit(1)
+          lines = [body[i:i+64] for i in range(0, len(body), 64)]
+          open(sys.argv[1], 'w').write(f'-----BEGIN {kind}-----\n' + '\n'.join(lines) + f'\n-----END {kind}-----\n')
+          PY
           echo "ASC_KEY_PATH=$RUNNER_TEMP/asc/AuthKey_$KID.p8" >> "$GITHUB_ENV"
 
       - name: Archive
