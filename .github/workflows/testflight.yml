@@ -61,7 +61,7 @@ jobs:
           try: der = base64.b64decode(body, validate=True)
           except Exception: ok = False; der = b''
           print(f"key text: {len(raw)} chars, {raw.count(chr(10))+1} lines, header={'yes' if m else 'no'} ({kind}), base64 body {len(body)} chars, decodes={'yes' if ok else 'no'} to {len(der)} bytes")
-          if not m or not ok or len(der) < 100:
+          if not ok or len(der) < 100 or der[0] != 0x30:   # a bare base64 body (BEGIN/END lines missing) is fine
               print('::error::ASC_KEY_P8 does not look like an App Store Connect .p8 key. Paste the whole file, including the BEGIN and END lines.')
               sys.exit(1)
           lines = [body[i:i+64] for i in range(0, len(body), 64)]
